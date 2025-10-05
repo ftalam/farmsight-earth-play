@@ -15,6 +15,8 @@ import { Card } from "@/components/ui/card";
 import { Droplets, FlaskConical, DollarSign } from "lucide-react";
 import { getSatelliteData } from "@/lib/satelliteData";
 import { useEffect } from "react";
+import { Wheat, Leaf } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 
 const Index = () => {
   const [currentMonth, setCurrentMonth] = useState(6); // Start in June (dry season)
@@ -28,12 +30,16 @@ const Index = () => {
   const INITIAL_WATER = 100;
   const INITIAL_FERTILIZER = 50;
   const INITIAL_SCORE = 0;
+  const INITIAL_YIELD = 0;
+  const INITIAL_VIGOR = 0;
 
   // Resource and score state
   const [funds, setFunds] = useState(INITIAL_FUNDS);
   const [water, setWater] = useState(INITIAL_WATER);
   const [fertilizer, setFertilizer] = useState(INITIAL_FERTILIZER);
   const [score, setScore] = useState(INITIAL_SCORE);
+  const [cropYield, setCropYield] = useState(INITIAL_YIELD);
+  const [plantVigor, setPlantVigor] = useState(INITIAL_VIGOR);
 
   const { season } = getSatelliteData(currentMonth);
 
@@ -43,6 +49,8 @@ const Index = () => {
     setWater(INITIAL_WATER);
     setFertilizer(INITIAL_FERTILIZER);
     setScore(INITIAL_SCORE);
+    setCropYield(INITIAL_YIELD);
+    setPlantVigor(INITIAL_VIGOR);
   }, [season]);
 
   return (
@@ -143,6 +151,26 @@ const Index = () => {
               </TabsContent>
             </Tabs>
             <TimeSlider currentMonth={currentMonth} onMonthChange={setCurrentMonth} />
+
+            {/* Yield and Vigor Indicators under TimeSlider */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Card className="p-4 bg-green-50 border-green-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <Wheat className="w-4 h-4 text-amber-600" />
+                  <div className="text-xs text-muted-foreground">Crop Yield</div>
+                </div>
+                <div className="text-2xl font-bold text-green-700 mb-2">{cropYield}%</div>
+                <Progress value={cropYield} className="h-2" />
+              </Card>
+              <Card className="p-4 bg-emerald-50 border-emerald-200">
+                <div className="flex items-center gap-2 mb-1">
+                  <Leaf className="w-4 h-4 text-green-600" />
+                  <div className="text-xs text-muted-foreground">Plant Vigor</div>
+                </div>
+                <div className="text-2xl font-bold text-emerald-700 mb-2">{plantVigor}%</div>
+                <Progress value={plantVigor} className="h-2" />
+              </Card>
+            </div>
           </div>
 
           {/* Data Panels - Takes 1 column */}
@@ -162,6 +190,8 @@ const Index = () => {
               setFertilizer={setFertilizer}
               score={score}
               setScore={setScore}
+              setCropYield={setCropYield}
+              setPlantVigor={setPlantVigor}
             />
           </div>
         </div>

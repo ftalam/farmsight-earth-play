@@ -16,9 +16,11 @@ interface DecisionPanelProps {
   setFertilizer: React.Dispatch<React.SetStateAction<number>>;
   score: number;
   setScore: React.Dispatch<React.SetStateAction<number>>;
+  setCropYield: React.Dispatch<React.SetStateAction<number>>;
+  setPlantVigor: React.Dispatch<React.SetStateAction<number>>;
 }
 
-export const DecisionPanel = ({ currentMonth, funds, setFunds, water, setWater, fertilizer, setFertilizer, score, setScore }: DecisionPanelProps) => {
+export const DecisionPanel = ({ currentMonth, funds, setFunds, water, setWater, fertilizer, setFertilizer, score, setScore, setCropYield, setPlantVigor }: DecisionPanelProps) => {
   const [decisionsUsed, setDecisionsUsed] = useState<string[]>([]);
   const [lastImpact, setLastImpact] = useState<number | null>(null);
   const data = getSatelliteData(currentMonth);
@@ -76,10 +78,38 @@ export const DecisionPanel = ({ currentMonth, funds, setFunds, water, setWater, 
       return prev;
     });
 
-    // Update score after applying resources
+    // Update score and agronomic indicators
     setScore((prev) => Math.max(0, prev + impact));
-    setLastImpact(impact);
 
+    setCropYield((prev) => {
+      // Increased base change from impact
+      let delta = Math.round(impact * 0.6);
+      // Fertilizer with adequate moisture boosts yield more; otherwise penalize harder
+      if (decisionType === "fertilizer") {
+        if (data.soilMoisture > 40) delta += 10; else delta -= 8;
+      }
+      // Drought-crops helps yield under very dry + low NDVI
+      if (decisionType === "drought-crops" && data.soilMoisture < 35 && data.ndvi < 0.5) {
+        delta += 8;
+      }
+      return Math.max(0, Math.min(100, prev + delta));
+    });
+
+    setPlantVigor((prev) => {
+      // Increased base change from impact
+      let delta = Math.round(impact * 0.5);
+      // Irrigation increases vigor when dry, hurts when already moist (stronger effect)
+      if (decisionType === "irrigation") {
+        if (data.soilMoisture < 45) delta += 10; else delta -= 6;
+      }
+      // Mulching helps under dry conditions (stronger effect)
+      if (decisionType === "mulching" && data.soilMoisture < 45) {
+        delta += 6;
+      }
+      return Math.max(0, Math.min(100, prev + delta));
+    });
+
+    setLastImpact(impact);
     setDecisionsUsed([...decisionsUsed, decisionType]);
 
     toast({
