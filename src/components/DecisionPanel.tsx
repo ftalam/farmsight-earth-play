@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { AlertCircle, CheckCircle2, Droplets, FlaskConical } from "lucide-react";
 import { getSatelliteData, getDecisions } from "@/lib/satelliteData";
 import { toast } from "@/hooks/use-toast";
+import { computeSuitability } from "@/lib/crops";
 
 interface DecisionPanelProps {
   currentMonth: number;
@@ -18,9 +19,10 @@ interface DecisionPanelProps {
   setScore: React.Dispatch<React.SetStateAction<number>>;
   setCropYield: React.Dispatch<React.SetStateAction<number>>;
   setPlantVigor: React.Dispatch<React.SetStateAction<number>>;
+  selectedCrop: import("@/lib/crops").CropKey;
 }
 
-export const DecisionPanel = ({ currentMonth, funds, setFunds, water, setWater, fertilizer, setFertilizer, score, setScore, setCropYield, setPlantVigor }: DecisionPanelProps) => {
+export const DecisionPanel = ({ currentMonth, funds, setFunds, water, setWater, fertilizer, setFertilizer, score, setScore, setCropYield, setPlantVigor, selectedCrop }: DecisionPanelProps) => {
   const [decisionsUsed, setDecisionsUsed] = useState<string[]>([]);
   const [lastImpact, setLastImpact] = useState<number | null>(null);
   const data = getSatelliteData(currentMonth);
@@ -30,6 +32,9 @@ export const DecisionPanel = ({ currentMonth, funds, setFunds, water, setWater, 
     setDecisionsUsed([]);
     setLastImpact(null);
   }, [currentMonth]);
+
+  const suitability = computeSuitability(data, selectedCrop); // 0-100
+  const suitabilityFactor = Math.max(0.5, Math.min(1.5, 0.5 + suitability / 100));
 
   const handleDecision = (decisionType: string, impact: number, feedback: string) => {
     if (decisionsUsed.includes(decisionType)) {
@@ -82,29 +87,29 @@ export const DecisionPanel = ({ currentMonth, funds, setFunds, water, setWater, 
     setScore((prev) => Math.max(0, prev + impact));
 
     setCropYield((prev) => {
-      // Increased base change from impact
-      let delta = Math.round(impact * 0.6);
+      // Increased base change from impact, scaled by crop suitability
+      let delta = Math.round(impact * 0.6 * suitabilityFactor);
       // Fertilizer with adequate moisture boosts yield more; otherwise penalize harder
       if (decisionType === "fertilizer") {
-        if (data.soilMoisture > 40) delta += 10; else delta -= 8;
+        if (data.soilMoisture > 40) delta += Math.round(10 * suitabilityFactor); else delta -= Math.round(8 * (2 - suitabilityFactor));
       }
       // Drought-crops helps yield under very dry + low NDVI
       if (decisionType === "drought-crops" && data.soilMoisture < 35 && data.ndvi < 0.5) {
-        delta += 8;
+        delta += Math.round(8 * suitabilityFactor);
       }
       return Math.max(0, Math.min(100, prev + delta));
     });
 
     setPlantVigor((prev) => {
-      // Increased base change from impact
-      let delta = Math.round(impact * 0.5);
+      // Increased base change from impact, scaled by crop suitability
+      let delta = Math.round(impact * 0.5 * suitabilityFactor);
       // Irrigation increases vigor when dry, hurts when already moist (stronger effect)
       if (decisionType === "irrigation") {
-        if (data.soilMoisture < 45) delta += 10; else delta -= 6;
+        if (data.soilMoisture < 45) delta += Math.round(10 * suitabilityFactor); else delta -= Math.round(6 * (2 - suitabilityFactor));
       }
       // Mulching helps under dry conditions (stronger effect)
       if (decisionType === "mulching" && data.soilMoisture < 45) {
-        delta += 6;
+        delta += Math.round(6 * suitabilityFactor);
       }
       return Math.max(0, Math.min(100, prev + delta));
     });

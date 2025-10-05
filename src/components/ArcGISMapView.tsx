@@ -17,14 +17,17 @@ import { getNASAGIBSLayers } from "@/lib/nasaDataService";
 import { getDEAfricaLayers } from "@/lib/deAfricaService";
 import { useToast } from "@/hooks/use-toast";
 import "@arcgis/core/assets/esri/themes/light/main.css";
+import { getCrops } from "@/lib/crops";
 
 interface ArcGISMapViewProps {
   currentMonth: number;
   dataSource: 'nasa' | 'de-africa';
   location: { lat: number; lon: number; name: string };
+  selectedCrop?: import("@/lib/crops").CropKey;
+  onCropChange?: (crop: import("@/lib/crops").CropKey) => void;
 }
 
-export const ArcGISMapView = ({ currentMonth, dataSource, location }: ArcGISMapViewProps) => {
+export const ArcGISMapView = ({ currentMonth, dataSource, location, selectedCrop, onCropChange }: ArcGISMapViewProps) => {
   const mapDiv = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<MapView | null>(null);
   const [selectedLayer, setSelectedLayer] = useState<string>('basemap');
@@ -276,31 +279,43 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location }: ArcGISMapV
             </Badge>
           </div>
         </div>
-        
-        <div className="space-y-3">
-          <div className="flex gap-2">
-            <Select value={selectedLayer} onValueChange={setSelectedLayer}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select layer" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="basemap">Satellite Basemap Only</SelectItem>
-                {dataSource === 'nasa' && (
-                  <>
-                    <SelectItem value="ndvi">MODIS NDVI (Vegetation)</SelectItem>
-                    <SelectItem value="temperature">Land Surface Temperature</SelectItem>
-                  </>
-                )}
-                {dataSource === 'de-africa' && (
-                  <>
-                    <SelectItem value="fractional-cover">Fractional Cover</SelectItem>
-                    <SelectItem value="cropland">Cropland Extent</SelectItem>
-                    <SelectItem value="water">Water Observations</SelectItem>
-                  </>
-                )}
-              </SelectContent>
-            </Select>
-          </div>
+
+        <div className="flex flex-col sm:flex-row gap-2 mb-2">
+          <Select value={selectedCrop} onValueChange={v => onCropChange && onCropChange(v as any)}>
+            <SelectTrigger className="w-full sm:w-64">
+              <SelectValue placeholder="Select crop" />
+            </SelectTrigger>
+            <SelectContent>
+              {getCrops().map(c => (
+                <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        <div className="flex gap-2">
+          <Select value={selectedLayer} onValueChange={setSelectedLayer}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Select layer" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="basemap">Satellite Basemap Only</SelectItem>
+              {dataSource === 'nasa' && (
+                <>
+                  <SelectItem value="ndvi">MODIS NDVI (Vegetation)</SelectItem>
+                  <SelectItem value="temperature">Land Surface Temperature</SelectItem>
+                </>
+              )}
+              {dataSource === 'de-africa' && (
+                <>
+                  <SelectItem value="fractional-cover">Fractional Cover</SelectItem>
+                  <SelectItem value="cropland">Cropland Extent</SelectItem>
+                  <SelectItem value="water">Water Observations</SelectItem>
+                </>
+              )}
+            </SelectContent>
+          </Select>
+        </div>
 
           {/* Overlay Controls */}
           <div className="space-y-2">

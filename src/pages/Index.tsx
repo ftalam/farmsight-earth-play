@@ -19,6 +19,7 @@ import { getSatelliteData } from "@/lib/satelliteData";
 import { useEffect } from "react";
 import { Wheat, Leaf } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import type { CropKey } from "@/lib/crops";
 
 const Index = () => {
   const [currentMonth, setCurrentMonth] = useState(6); // Start in June (dry season)
@@ -26,6 +27,7 @@ const Index = () => {
   const [dataSource, setDataSource] = useState<'nasa' | 'de-africa'>('nasa');
   const [location, setLocation] = useState({ lat: -1.2921, lon: 36.8219, name: "Kajiado, Kenya" }); // Default location
   const [mapView, setMapView] = useState<'simple' | 'arcgis'>('simple');
+  const [selectedCrop, setSelectedCrop] = useState<CropKey>('maize');
 
   // Initial constants per scenario
   const INITIAL_FUNDS = 1000;
@@ -151,6 +153,8 @@ const Index = () => {
                   currentMonth={currentMonth} 
                   dataSource={dataSource}
                   location={location}
+                  selectedCrop={selectedCrop}
+                  onCropChange={setSelectedCrop}
                 />
               </TabsContent>
             </Tabs>
@@ -202,6 +206,7 @@ const Index = () => {
               setScore={setScore}
               setCropYield={setCropYield}
               setPlantVigor={setPlantVigor}
+              selectedCrop={selectedCrop}
             />
           </div>
         </div>
