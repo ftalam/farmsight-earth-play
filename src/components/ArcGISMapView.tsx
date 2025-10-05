@@ -17,17 +17,14 @@ import { getNASAGIBSLayers } from "@/lib/nasaDataService";
 import { getDEAfricaLayers } from "@/lib/deAfricaService";
 import { useToast } from "@/hooks/use-toast";
 import "@arcgis/core/assets/esri/themes/light/main.css";
-import { getCrops } from "@/lib/crops";
 
 interface ArcGISMapViewProps {
   currentMonth: number;
   dataSource: 'nasa' | 'de-africa';
   location: { lat: number; lon: number; name: string };
-  selectedCrop?: import("@/lib/crops").CropKey;
-  onCropChange?: (crop: import("@/lib/crops").CropKey) => void;
 }
 
-export const ArcGISMapView = ({ currentMonth, dataSource, location, selectedCrop, onCropChange }: ArcGISMapViewProps) => {
+export const ArcGISMapView = ({ currentMonth, dataSource, location }: ArcGISMapViewProps) => {
   const mapDiv = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<MapView | null>(null);
   const [selectedLayer, setSelectedLayer] = useState<string>('basemap');
@@ -280,19 +277,6 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location, selectedCrop
           </div>
         </div>
 
-        <div className="flex flex-col sm:flex-row gap-2 mb-2">
-          <Select value={selectedCrop} onValueChange={v => onCropChange && onCropChange(v as any)}>
-            <SelectTrigger className="w-full sm:w-64">
-              <SelectValue placeholder="Select crop" />
-            </SelectTrigger>
-            <SelectContent>
-              {getCrops().map(c => (
-                <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-
         <div className="flex gap-2">
           <Select value={selectedLayer} onValueChange={setSelectedLayer}>
             <SelectTrigger className="w-full">
@@ -317,91 +301,90 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location, selectedCrop
           </Select>
         </div>
 
-          {/* Overlay Controls */}
-          <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Layers className="w-4 h-4 text-muted-foreground" />
-              <span className="text-sm font-medium text-foreground">Map Overlays</span>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="boundaries"
-                  checked={overlayLayers.boundaries}
-                  onCheckedChange={(checked) => 
-                    setOverlayLayers(prev => ({ ...prev, boundaries: checked }))
-                  }
-                />
-                <Label htmlFor="boundaries" className="text-xs">Boundaries</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="roads"
-                  checked={overlayLayers.roads}
-                  onCheckedChange={(checked) => 
-                    setOverlayLayers(prev => ({ ...prev, roads: checked }))
-                  }
-                />
-                <Label htmlFor="roads" className="text-xs">Roads</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="water"
-                  checked={overlayLayers.water}
-                  onCheckedChange={(checked) => 
-                    setOverlayLayers(prev => ({ ...prev, water: checked }))
-                  }
-                />
-                <Label htmlFor="water" className="text-xs">Water</Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="elevation"
-                  checked={overlayLayers.elevation}
-                  onCheckedChange={(checked) => 
-                    setOverlayLayers(prev => ({ ...prev, elevation: checked }))
-                  }
-                />
-                <Label htmlFor="elevation" className="text-xs">Elevation</Label>
-              </div>
-            </div>
+        {/* Overlay Controls */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Layers className="w-4 h-4 text-muted-foreground" />
+            <span className="text-sm font-medium text-foreground">Map Overlays</span>
           </div>
-
-          {/* Interaction Controls */}
-          <div className="flex items-center justify-between pt-2 border-t border-border">
+          <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center space-x-2">
               <Switch
-                id="popup"
-                checked={showPopup}
-                onCheckedChange={setShowPopup}
-              />
-              <Label htmlFor="popup" className="text-xs">Click Info</Label>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (view) {
-                  view.goTo({
-                    center: [location.lon, location.lat],
-                    zoom: 12
-                  });
-                  toast({
-                    title: "Map Centered",
-                    description: `Focused on ${location.name}`,
-                  });
+                id="boundaries"
+                checked={overlayLayers.boundaries}
+                onCheckedChange={(checked) => 
+                  setOverlayLayers(prev => ({ ...prev, boundaries: checked }))
                 }
-              }}
-              className="gap-1"
-            >
-              <MapPin className="w-3 h-3" />
-              Center
-            </Button>
+              />
+              <Label htmlFor="boundaries" className="text-xs">Boundaries</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="roads"
+                checked={overlayLayers.roads}
+                onCheckedChange={(checked) => 
+                  setOverlayLayers(prev => ({ ...prev, roads: checked }))
+                }
+              />
+              <Label htmlFor="roads" className="text-xs">Roads</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="water"
+                checked={overlayLayers.water}
+                onCheckedChange={(checked) => 
+                  setOverlayLayers(prev => ({ ...prev, water: checked }))
+                }
+              />
+              <Label htmlFor="water" className="text-xs">Water</Label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="elevation"
+                checked={overlayLayers.elevation}
+                onCheckedChange={(checked) => 
+                  setOverlayLayers(prev => ({ ...prev, elevation: checked }))
+                }
+              />
+              <Label htmlFor="elevation" className="text-xs">Elevation</Label>
+            </div>
           </div>
+        </div>
+
+        {/* Interaction Controls */}
+        <div className="flex items-center justify-between pt-2 border-t border-border">
+          <div className="flex items-center space-x-2">
+            <Switch
+              id="popup"
+              checked={showPopup}
+              onCheckedChange={setShowPopup}
+            />
+            <Label htmlFor="popup" className="text-xs">Click Info</Label>
+          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              if (view) {
+                view.goTo({
+                  center: [location.lon, location.lat],
+                  zoom: 12
+                });
+                toast({
+                  title: "Map Centered",
+                  description: `Focused on ${location.name}`,
+                });
+              }
+            }}
+            className="gap-1"
+          >
+            <MapPin className="w-3 h-3" />
+            Center
+          </Button>
         </div>
       </div>
 
-      <div ref={mapDiv} className="w-full h-[500px]" />
+      <div ref={mapDiv} className="w-full h-[500px]"></div>
 
       <div className="bg-muted/50 p-3 text-xs text-muted-foreground">
         <p>
@@ -411,4 +394,4 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location, selectedCrop
       </div>
     </Card>
   );
-};
+}

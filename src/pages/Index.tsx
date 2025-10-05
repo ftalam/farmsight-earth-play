@@ -20,6 +20,8 @@ import { useEffect } from "react";
 import { Wheat, Leaf } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import type { CropKey } from "@/lib/crops";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { getCrops } from "@/lib/crops";
 
 const Index = () => {
   const [currentMonth, setCurrentMonth] = useState(6); // Start in June (dry season)
@@ -153,8 +155,6 @@ const Index = () => {
                   currentMonth={currentMonth} 
                   dataSource={dataSource}
                   location={location}
-                  selectedCrop={selectedCrop}
-                  onCropChange={setSelectedCrop}
                 />
               </TabsContent>
             </Tabs>
@@ -189,10 +189,27 @@ const Index = () => {
 
           {/* Data Panels - Takes 1 column */}
           <div className="space-y-4">
-            <LocationInput 
-              currentLocation={location}
-              onLocationChange={setLocation}
+            <DataSourceSwitcher 
+              currentSource={dataSource}
+              onSourceChange={setDataSource}
             />
+
+            <LocationInput currentLocation={location} onLocationChange={setLocation} />
+
+            {/* Crop Selector under data source */}
+            <Card className="p-4">
+              <div className="text-xs text-muted-foreground mb-2">Select Crop</div>
+              <Select value={selectedCrop} onValueChange={(v) => setSelectedCrop(v as CropKey)}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Choose crop" />
+                </SelectTrigger>
+                <SelectContent>
+                  {getCrops().map((c) => (
+                    <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </Card>
             <DataPanel currentMonth={currentMonth} />
             <DecisionPanel 
               currentMonth={currentMonth}
