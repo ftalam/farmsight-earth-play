@@ -173,6 +173,7 @@ const Index = () => {
                 currentMonth={currentMonth} 
                 dataSource={dataSource}
                 location={location}
+                onLocationChange={setLocation}
               />
             </TabsContent>
           </Tabs>
@@ -207,6 +208,7 @@ const Index = () => {
                   currentMonth={currentMonth} 
                   dataSource={dataSource}
                   location={location}
+                  onLocationChange={setLocation}
                 />
               </TabsContent>
             </Tabs>

@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Layers, Satellite, MapPin, Eye, EyeOff, Info } from "lucide-react";
+import { Layers, Satellite, MapPin } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getNASAGIBSLayers } from "@/lib/nasaDataService";
 import { getDEAfricaLayers } from "@/lib/deAfricaService";
@@ -22,9 +22,10 @@ interface ArcGISMapViewProps {
   currentMonth: number;
   dataSource: 'nasa' | 'de-africa';
   location: { lat: number; lon: number; name: string };
+  onLocationChange?: (location: { lat: number; lon: number; name: string }) => void;
 }
 
-export const ArcGISMapView = ({ currentMonth, dataSource, location }: ArcGISMapViewProps) => {
+export const ArcGISMapView = ({ currentMonth, dataSource, location, onLocationChange }: ArcGISMapViewProps) => {
   const mapDiv = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<MapView | null>(null);
   const [selectedLayer, setSelectedLayer] = useState<string>('basemap');
@@ -87,48 +88,37 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location }: ArcGISMapV
 
     farmPlotLayer.add(farmPlotGraphic);
 
-    // Add click event for popup
-    if (showPopup) {
-      mapView.on("click", async (event) => {
-        try {
-          const hitTest = await mapView.hitTest(event);
-          if (hitTest.results.length > 0) {
-            const result = hitTest.results[0];
-            if (result.type === "graphic" && result.graphic && result.graphic.attributes) {
-              const graphic = result.graphic;
-              const { name, type, coordinates, status, lastUpdated } = graphic.attributes;
-              
-              // Create popup content
-              const popupContent = `
-                <div style="padding: 10px; min-width: 200px;">
-                  <h3 style="margin: 0 0 10px 0; color: #1f2937; font-size: 16px; font-weight: bold;">${name}</h3>
-                  <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 14px;"><strong>Type:</strong> ${type}</p>
-                  <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 14px;"><strong>Coordinates:</strong> ${coordinates}</p>
-                  <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 14px;"><strong>Status:</strong> <span style="color: #10b981;">${status}</span></p>
-                  <p style="margin: 0; color: #6b7280; font-size: 12px;"><strong>Last Updated:</strong> ${lastUpdated}</p>
-                </div>
-              `;
-              
-              // Show popup at clicked location
-              mapView.popup.open({
-                location: event.mapPoint,
-                content: popupContent,
-                title: "Location Details"
-              });
-            }
-          }
-        } catch (error) {
-          console.error("Error handling map click:", error);
+    // Add click event for popup and propagate selection
+    mapView.on("click", async (event) => {
+      try {
+        const lon = event.mapPoint.longitude;
+        const lat = event.mapPoint.latitude;
+        if (onLocationChange) {
+          onLocationChange({ lat, lon, name: `Selected (${lat.toFixed(4)}, ${lon.toFixed(4)})` });
         }
-      });
-    }
+        if (!showPopup) return;
+        const popupContent = `
+          <div style="padding: 10px; min-width: 200px;">
+            <h3 style=\"margin: 0 0 10px 0; color: #1f2937; font-size: 16px; font-weight: bold;\">Selected Point</h3>
+            <p style=\"margin: 0 0 5px 0; color: #6b7280; font-size: 14px;\"><strong>Coordinates:</strong> ${lat.toFixed(4)}, ${lon.toFixed(4)}</p>
+          </div>
+        `;
+        mapView.popup.open({
+          location: event.mapPoint,
+          content: popupContent,
+          title: "Location Details"
+        });
+      } catch (error) {
+        console.error("Error handling map click:", error);
+      }
+    });
 
     setView(mapView);
 
     return () => {
       mapView?.destroy();
     };
-  }, [location.lat, location.lon, location.name, showPopup]);
+  }, [location.lat, location.lon, location.name, onLocationChange, showPopup]);
 
   // Handle overlay layers
   useEffect(() => {
@@ -221,9 +211,7 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location }: ArcGISMapV
 
     // Add appropriate layer based on data source
     if (dataSource === 'nasa') {
-      const nasaLayers = getNASAGIBSLayers();
       if (selectedLayer === 'ndvi') {
-        // NASA GIBS WMTS layer
         const ndviLayer = new TileLayer({
           url: "https://gibs.earthdata.nasa.gov/wmts/epsg4326/best/MODIS_Terra_NDVI_8Day/default/{level}/{row}/{col}.png",
           title: "MODIS Terra NDVI",
