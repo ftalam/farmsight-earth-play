@@ -97,39 +97,41 @@ const Index = () => {
         />
 
         {/* Score and Resources below Scenario */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <Card className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <DollarSign className="w-4 h-4 text-primary" />
-              <div className="text-xs text-muted-foreground">Score</div>
-            </div>
-            <div className="text-2xl font-bold text-foreground">{score}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center gap-2 mb-1">
-              <DollarSign className="w-4 h-4 text-primary" />
-              <div className="text-xs text-muted-foreground">Funds</div>
-            </div>
-            <div className="text-2xl font-bold text-foreground">${funds}</div>
-          </Card>
-          <Card className="p-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <Droplets className="w-4 h-4 text-secondary" />
-                  <div className="text-xs text-muted-foreground">Water</div>
-                </div>
-                <div className="text-xl font-bold text-foreground">{water} L</div>
+        <div className="sticky top-2 z-40 bg-card/90 backdrop-blur supports-[backdrop-filter]:bg-card/70 border border-border rounded-lg p-2">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign className="w-4 h-4 text-primary" />
+                <div className="text-xs text-muted-foreground">Score</div>
               </div>
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <FlaskConical className="w-4 h-4 text-success" />
-                  <div className="text-xs text-muted-foreground">Fertilizer</div>
-                </div>
-                <div className="text-xl font-bold text-foreground">{fertilizer} kg</div>
+              <div className="text-2xl font-bold text-foreground">{score}</div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <DollarSign className="w-4 h-4 text-primary" />
+                <div className="text-xs text-muted-foreground">Funds</div>
               </div>
-            </div>
-          </Card>
+              <div className="text-2xl font-bold text-foreground">${funds}</div>
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <Droplets className="w-4 h-4 text-secondary" />
+                    <div className="text-xs text-muted-foreground">Water</div>
+                  </div>
+                  <div className="text-xl font-bold text-foreground">{water} L</div>
+                </div>
+                <div>
+                  <div className="flex items-center gap-2 mb-1">
+                    <FlaskConical className="w-4 h-4 text-success" />
+                    <div className="text-xs text-muted-foreground">Fertilizer</div>
+                  </div>
+                  <div className="text-xl font-bold text-foreground">{fertilizer} kg</div>
+                </div>
+              </div>
+            </Card>
+          </div>
         </div>
 
         {/* Main Grid Layout */}
