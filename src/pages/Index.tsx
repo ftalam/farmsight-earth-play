@@ -168,32 +168,27 @@ const Index = () => {
 
             {/* Yield and Vigor Indicators under TimeSlider */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <Card className="p-4 bg-green-50 border-green-200">
+              <Card className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Wheat className="w-4 h-4 text-amber-600" />
                   <div className="text-xs text-muted-foreground">Crop Yield</div>
                 </div>
-                <div className="text-2xl font-bold text-green-700 mb-2">{cropYield}%</div>
-                <Progress value={cropYield} className="h-2" />
+                <div className="text-2xl font-bold text-foreground mb-2">{cropYield}%</div>
+                <Progress value={cropYield} className="h-2 bg-secondary" indicatorClassName="bg-primary" />
               </Card>
-              <Card className="p-4 bg-emerald-50 border-emerald-200">
+              <Card className="p-4">
                 <div className="flex items-center gap-2 mb-1">
                   <Leaf className="w-4 h-4 text-green-600" />
                   <div className="text-xs text-muted-foreground">Plant Vigor</div>
                 </div>
-                <div className="text-2xl font-bold text-emerald-700 mb-2">{plantVigor}%</div>
-                <Progress value={plantVigor} className="h-2" />
+                <div className="text-2xl font-bold text-foreground mb-2">{plantVigor}%</div>
+                <Progress value={plantVigor} className="h-2 bg-secondary" indicatorClassName="bg-primary" />
               </Card>
             </div>
           </div>
 
           {/* Data Panels - Takes 1 column */}
           <div className="space-y-4">
-            <DataSourceSwitcher 
-              currentSource={dataSource}
-              onSourceChange={setDataSource}
-            />
-
             <LocationInput currentLocation={location} onLocationChange={setLocation} />
 
             {/* Crop Selector under data source */}
