@@ -9,22 +9,24 @@ import { toast } from "@/hooks/use-toast";
 interface DecisionPanelProps {
   currentMonth: number;
   funds: number;
-  setFunds: (f: number) => void;
+  setFunds: React.Dispatch<React.SetStateAction<number>>;
   water: number;
-  setWater: (w: number) => void;
+  setWater: React.Dispatch<React.SetStateAction<number>>;
   fertilizer: number;
-  setFertilizer: (f: number) => void;
+  setFertilizer: React.Dispatch<React.SetStateAction<number>>;
   score: number;
-  setScore: (s: number) => void;
+  setScore: React.Dispatch<React.SetStateAction<number>>;
 }
 
 export const DecisionPanel = ({ currentMonth, funds, setFunds, water, setWater, fertilizer, setFertilizer, score, setScore }: DecisionPanelProps) => {
   const [decisionsUsed, setDecisionsUsed] = useState<string[]>([]);
+  const [lastImpact, setLastImpact] = useState<number | null>(null);
   const data = getSatelliteData(currentMonth);
   const decisions = getDecisions(currentMonth);
 
   useEffect(() => {
     setDecisionsUsed([]);
+    setLastImpact(null);
   }, [currentMonth]);
 
   const handleDecision = (decisionType: string, impact: number, feedback: string) => {
@@ -37,40 +39,47 @@ export const DecisionPanel = ({ currentMonth, funds, setFunds, water, setWater, 
       return;
     }
 
-    // Resource logic
-    let newFunds = funds;
-    let newWater = water;
-    let newFertilizer = fertilizer;
+    // Apply resource changes using functional updates to avoid stale values
+    setFunds((prev) => {
+      let next = prev;
+      if (decisionType === "irrigation") {
+        next = Math.max(0, next - 50);
+      } else if (decisionType === "fertilizer") {
+        next = Math.max(0, next - 30);
+      } else if (decisionType === "drought-crops") {
+        next = Math.max(0, next - 40);
+      } else if (decisionType === "mulching") {
+        next = Math.max(0, next - 20);
+      } else if (decisionType === "water-harvest") {
+        next = Math.max(0, next - 60);
+      }
+      if (impact > 0) {
+        next += Math.floor(impact / 2);
+      }
+      return next;
+    });
 
-    if (decisionType === "irrigation") {
-      newWater = Math.max(0, water - 20);
-      newFunds = Math.max(0, funds - 50);
-    } else if (decisionType === "fertilizer") {
-      newFertilizer = Math.max(0, fertilizer - 10);
-      newFunds = Math.max(0, funds - 30);
-    } else if (decisionType === "drought-crops") {
-      newFunds = Math.max(0, funds - 40);
-    } else if (decisionType === "mulching") {
-      newFunds = Math.max(0, funds - 20);
-    } else if (decisionType === "water-harvest") {
-      newFunds = Math.max(0, funds - 60);
-      newWater = water + 10;
-    } else if (decisionType === "monitor") {
-      // No resource change
-    }
+    setWater((prev) => {
+      if (decisionType === "irrigation") {
+        return Math.max(0, prev - 20);
+      }
+      if (decisionType === "water-harvest") {
+        return prev + 10;
+      }
+      return prev;
+    });
 
-    // Update score based on impact
-    const newScore = Math.max(0, score + impact);
+    setFertilizer((prev) => {
+      if (decisionType === "fertilizer") {
+        return Math.max(0, prev - 10);
+      }
+      return prev;
+    });
 
-    // Reward for good impact to funds
-    if (impact > 0) {
-      newFunds += Math.floor(impact / 2);
-    }
+    // Update score after applying resources
+    setScore((prev) => Math.max(0, prev + impact));
+    setLastImpact(impact);
 
-    setFunds(newFunds);
-    setWater(newWater);
-    setFertilizer(newFertilizer);
-    setScore(newScore);
     setDecisionsUsed([...decisionsUsed, decisionType]);
 
     toast({
@@ -80,11 +89,14 @@ export const DecisionPanel = ({ currentMonth, funds, setFunds, water, setWater, 
     });
   };
 
+  const scoreColorClass = lastImpact == null ? "text-foreground" : lastImpact > 0 ? "text-success" : "text-destructive";
+
   return (
     <Card className="p-4 shadow-md">
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-foreground">Farm Decisions</h3>
+          <div className={`text-sm font-semibold ${scoreColorClass}`}>Score: {score}</div>
         </div>
 
         {/* Current Conditions Alert */}
