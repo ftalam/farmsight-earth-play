@@ -134,8 +134,58 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Main Grid Layout */}
-        <div className="grid lg:grid-cols-3 gap-4">
+        {/* Mobile-only: pre-map inputs (Location + Crop) */}
+        <div className="space-y-4 lg:hidden">
+          <LocationInput currentLocation={location} onLocationChange={setLocation} />
+          <Card className="p-4">
+            <div className="text-xs text-muted-foreground mb-2">Select Crop</div>
+            <Select value={selectedCrop} onValueChange={(v) => setSelectedCrop(v as CropKey)}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Choose crop" />
+              </SelectTrigger>
+              <SelectContent>
+                {getCrops().map((c) => (
+                  <SelectItem key={c.key} value={c.key}>{c.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </Card>
+        </div>
+
+        {/* Mobile-only: map + time + status */}
+        <div className="lg:hidden space-y-4">
+          <Tabs value={mapView} onValueChange={(v) => setMapView(v as 'simple' | 'arcgis')}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="simple" className="gap-2">
+                <MapIcon className="w-4 h-4" />
+                Simple View
+              </TabsTrigger>
+              <TabsTrigger value="arcgis" className="gap-2">
+                <MapIcon className="w-4 h-4" />
+                Satellite Map
+              </TabsTrigger>
+            </TabsList>
+            <TabsContent value="simple" className="mt-4">
+              <MapView currentMonth={currentMonth} location={location} />
+            </TabsContent>
+            <TabsContent value="arcgis" className="mt-4">
+              <ArcGISMapView 
+                currentMonth={currentMonth} 
+                dataSource={dataSource}
+                location={location}
+              />
+            </TabsContent>
+          </Tabs>
+          <TimeSlider currentMonth={currentMonth} onMonthChange={setCurrentMonth} />
+          <LocationStatus 
+            location={location}
+            currentMonth={currentMonth}
+            dataSource={dataSource}
+          />
+        </div>
+
+        {/* Desktop Grid Layout */}
+        <div className="hidden lg:grid lg:grid-cols-3 gap-4">
           {/* Map and Timeline - Takes 2 columns */}
           <div className="lg:col-span-2 space-y-4">
             <Tabs value={mapView} onValueChange={(v) => setMapView(v as 'simple' | 'arcgis')}>
@@ -222,6 +272,43 @@ const Index = () => {
               setPlantVigor={setPlantVigor}
               selectedCrop={selectedCrop}
             />
+          </div>
+        </div>
+
+        {/* Mobile-only: post-map content order */}
+        <div className="lg:hidden space-y-4">
+          <DataPanel currentMonth={currentMonth} />
+          <DecisionPanel 
+            currentMonth={currentMonth}
+            funds={funds}
+            setFunds={setFunds}
+            water={water}
+            setWater={setWater}
+            fertilizer={fertilizer}
+            setFertilizer={setFertilizer}
+            score={score}
+            setScore={setScore}
+            setCropYield={setCropYield}
+            setPlantVigor={setPlantVigor}
+            selectedCrop={selectedCrop}
+          />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Wheat className="w-4 h-4 text-amber-600" />
+                <div className="text-xs text-muted-foreground">Crop Yield</div>
+              </div>
+              <div className="text-2xl font-bold text-foreground mb-2">{cropYield}%</div>
+              <Progress value={cropYield} className="h-2 bg-secondary" indicatorClassName="bg-primary" />
+            </Card>
+            <Card className="p-4">
+              <div className="flex items-center gap-2 mb-1">
+                <Leaf className="w-4 h-4 text-green-600" />
+                <div className="text-xs text-muted-foreground">Plant Vigor</div>
+              </div>
+              <div className="text-2xl font-bold text-foreground mb-2">{plantVigor}%</div>
+              <Progress value={plantVigor} className="h-2 bg-secondary" indicatorClassName="bg-primary" />
+            </Card>
           </div>
         </div>
       </main>
