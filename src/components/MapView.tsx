@@ -5,9 +5,10 @@ import { getSatelliteData } from "@/lib/satelliteData";
 
 interface MapViewProps {
   currentMonth: number;
+  location?: { lat: number; lon: number; name: string };
 }
 
-export const MapView = ({ currentMonth }: MapViewProps) => {
+export const MapView = ({ currentMonth, location }: MapViewProps) => {
   const data = getSatelliteData(currentMonth);
   
   // Determine map color based on health
@@ -22,7 +23,9 @@ export const MapView = ({ currentMonth }: MapViewProps) => {
       <div className="bg-card p-4 border-b border-border flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Layers className="w-5 h-5 text-primary" />
-          <h2 className="font-semibold text-foreground">Satellite View - Farm Plot</h2>
+          <h2 className="font-semibold text-foreground">
+            Satellite View - {location?.name || 'Farm Plot'}
+          </h2>
         </div>
         <Badge variant="outline" className="gap-1">
           <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
@@ -82,7 +85,9 @@ export const MapView = ({ currentMonth }: MapViewProps) => {
 
       <div className="bg-muted/50 p-3 text-xs text-muted-foreground">
         <p>
-          Data Source: Simulated NASA MODIS & Digital Earth Africa • Location: East Africa (Sample)
+          Data Source: Simulated NASA MODIS & Digital Earth Africa • 
+          Location: {location?.name || 'East Africa (Sample)'} • 
+          Coordinates: {location ? `${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}` : 'N/A'}
         </p>
       </div>
     </Card>

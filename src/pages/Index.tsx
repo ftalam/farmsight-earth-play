@@ -1,13 +1,15 @@
 import { useState } from "react";
 import { MapView } from "@/components/MapView";
 import { ArcGISMapView } from "@/components/ArcGISMapView";
+import { LocationInput } from "@/components/LocationInput";
+import { LocationStatus } from "@/components/LocationStatus";
 import { DataPanel } from "@/components/DataPanel";
 import { TimeSlider } from "@/components/TimeSlider";
 import { DecisionPanel } from "@/components/DecisionPanel";
 import { ScenarioInfo } from "@/components/ScenarioInfo";
 import { TeacherGuide } from "@/components/TeacherGuide";
 import { DataSourceSwitcher } from "@/components/DataSourceSwitcher";
-import { Sprout, BookOpen, Map as MapIcon } from "lucide-react";
+import { Sprout, BookOpen, Map as MapIcon, MapPin } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -22,7 +24,7 @@ const Index = () => {
   const [currentMonth, setCurrentMonth] = useState(6); // Start in June (dry season)
   const [showGuide, setShowGuide] = useState(false);
   const [dataSource, setDataSource] = useState<'nasa' | 'de-africa'>('nasa');
-  const [location] = useState({ lat: -1.2921, lon: 36.8219, name: "Kajiado, Kenya" }); // Default location
+  const [location, setLocation] = useState({ lat: -1.2921, lon: 36.8219, name: "Kajiado, Kenya" }); // Default location
   const [mapView, setMapView] = useState<'simple' | 'arcgis'>('simple');
 
   // Initial constants per scenario
@@ -84,8 +86,10 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto p-4 space-y-4">
         {/* Scenario Info */}
-        <ScenarioInfo 
-          currentMonth={currentMonth}
+        <ScenarioInfo currentMonth={currentMonth} />
+        <DataSourceSwitcher 
+          currentSource={dataSource}
+          onSourceChange={setDataSource}
         />
 
         {/* Score and Resources below Scenario */}
@@ -140,7 +144,7 @@ const Index = () => {
                 </TabsTrigger>
               </TabsList>
               <TabsContent value="simple" className="mt-4">
-                <MapView currentMonth={currentMonth} />
+                <MapView currentMonth={currentMonth} location={location} />
               </TabsContent>
               <TabsContent value="arcgis" className="mt-4">
                 <ArcGISMapView 
@@ -151,6 +155,12 @@ const Index = () => {
               </TabsContent>
             </Tabs>
             <TimeSlider currentMonth={currentMonth} onMonthChange={setCurrentMonth} />
+
+            <LocationStatus 
+              location={location}
+              currentMonth={currentMonth}
+              dataSource={dataSource}
+            />
 
             {/* Yield and Vigor Indicators under TimeSlider */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -175,9 +185,9 @@ const Index = () => {
 
           {/* Data Panels - Takes 1 column */}
           <div className="space-y-4">
-            <DataSourceSwitcher 
-              currentSource={dataSource}
-              onSourceChange={setDataSource}
+            <LocationInput 
+              currentLocation={location}
+              onLocationChange={setLocation}
             />
             <DataPanel currentMonth={currentMonth} />
             <DecisionPanel 

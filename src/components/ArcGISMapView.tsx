@@ -5,13 +5,17 @@ import TileLayer from "@arcgis/core/layers/TileLayer";
 import WMSLayer from "@arcgis/core/layers/WMSLayer";
 import Graphic from "@arcgis/core/Graphic";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
+import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Layers, Satellite, MapPin } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Layers, Satellite, MapPin, Eye, EyeOff, Info } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getNASAGIBSLayers } from "@/lib/nasaDataService";
 import { getDEAfricaLayers } from "@/lib/deAfricaService";
+import { useToast } from "@/hooks/use-toast";
 import "@arcgis/core/assets/esri/themes/light/main.css";
 
 interface ArcGISMapViewProps {
@@ -24,6 +28,14 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location }: ArcGISMapV
   const mapDiv = useRef<HTMLDivElement>(null);
   const [view, setView] = useState<MapView | null>(null);
   const [selectedLayer, setSelectedLayer] = useState<string>('basemap');
+  const [overlayLayers, setOverlayLayers] = useState<{[key: string]: boolean}>({
+    boundaries: false,
+    roads: false,
+    water: false,
+    elevation: false
+  });
+  const [showPopup, setShowPopup] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (!mapDiv.current) return;
@@ -45,7 +57,7 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location }: ArcGISMapV
       }
     });
 
-    // Add farm plot marker
+    // Add farm plot marker with enhanced styling
     const farmPlotLayer = new GraphicsLayer();
     map.add(farmPlotLayer);
 
@@ -58,26 +70,137 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location }: ArcGISMapV
       symbol: {
         type: "simple-marker",
         color: [255, 99, 71],
-        size: 12,
+        size: 16,
         outline: {
           color: [255, 255, 255],
-          width: 2
+          width: 3
         }
       },
       attributes: {
         name: location.name,
-        type: "Farm Plot"
+        type: "Farm Plot",
+        coordinates: `${location.lat.toFixed(4)}, ${location.lon.toFixed(4)}`,
+        status: "Active",
+        lastUpdated: new Date().toLocaleDateString()
       }
     });
 
     farmPlotLayer.add(farmPlotGraphic);
+
+    // Add click event for popup
+    if (showPopup) {
+      mapView.on("click", async (event) => {
+        try {
+          const hitTest = await mapView.hitTest(event);
+          if (hitTest.results.length > 0) {
+            const result = hitTest.results[0];
+            if (result.type === "graphic" && result.graphic && result.graphic.attributes) {
+              const graphic = result.graphic;
+              const { name, type, coordinates, status, lastUpdated } = graphic.attributes;
+              
+              // Create popup content
+              const popupContent = `
+                <div style="padding: 10px; min-width: 200px;">
+                  <h3 style="margin: 0 0 10px 0; color: #1f2937; font-size: 16px; font-weight: bold;">${name}</h3>
+                  <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 14px;"><strong>Type:</strong> ${type}</p>
+                  <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 14px;"><strong>Coordinates:</strong> ${coordinates}</p>
+                  <p style="margin: 0 0 5px 0; color: #6b7280; font-size: 14px;"><strong>Status:</strong> <span style="color: #10b981;">${status}</span></p>
+                  <p style="margin: 0; color: #6b7280; font-size: 12px;"><strong>Last Updated:</strong> ${lastUpdated}</p>
+                </div>
+              `;
+              
+              // Show popup at clicked location
+              mapView.popup.open({
+                location: event.mapPoint,
+                content: popupContent,
+                title: "Location Details"
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Error handling map click:", error);
+        }
+      });
+    }
 
     setView(mapView);
 
     return () => {
       mapView?.destroy();
     };
-  }, [location.lat, location.lon, location.name]);
+  }, [location.lat, location.lon, location.name, showPopup]);
+
+  // Handle overlay layers
+  useEffect(() => {
+    if (!view) return;
+
+    const map = view.map as Map;
+    
+    // Remove existing overlay layers
+    const existingOverlays = map.layers.filter(layer => 
+      layer.title?.includes('Boundaries') || 
+      layer.title?.includes('Roads') ||
+      layer.title?.includes('Water') ||
+      layer.title?.includes('Elevation')
+    );
+    map.removeMany(existingOverlays.toArray());
+
+    // Add overlay layers based on state
+    if (overlayLayers.boundaries) {
+      const boundariesLayer = new FeatureLayer({
+        url: "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/World_Countries_(Generalized)/FeatureServer/0",
+        title: "Country Boundaries",
+        opacity: 0.7,
+        renderer: {
+          type: "simple",
+          symbol: {
+            type: "simple-line",
+            color: [100, 100, 100, 0.8],
+            width: 1
+          }
+        }
+      });
+      map.add(boundariesLayer);
+    }
+
+    if (overlayLayers.roads) {
+      const roadsLayer = new TileLayer({
+        url: "https://services.arcgisonline.com/ArcGIS/rest/services/Reference/World_Transportation/MapServer",
+        title: "Roads",
+        opacity: 0.6
+      });
+      map.add(roadsLayer);
+    }
+
+    if (overlayLayers.water) {
+      const waterLayer = new FeatureLayer({
+        url: "https://services.arcgis.com/P3ePLMYs2RVChkJx/arcgis/rest/services/World_Water_Bodies/FeatureServer/0",
+        title: "Water Bodies",
+        opacity: 0.5,
+        renderer: {
+          type: "simple",
+          symbol: {
+            type: "simple-fill",
+            color: [0, 100, 200, 0.6],
+            outline: {
+              color: [0, 50, 100, 0.8],
+              width: 1
+            }
+          }
+        }
+      });
+      map.add(waterLayer);
+    }
+
+    if (overlayLayers.elevation) {
+      const elevationLayer = new TileLayer({
+        url: "https://services.arcgisonline.com/ArcGIS/rest/services/Elevation/World_Hillshade/MapServer",
+        title: "Elevation",
+        opacity: 0.4
+      });
+      map.add(elevationLayer);
+    }
+  }, [view, overlayLayers]);
 
   // Update satellite layers based on data source
   useEffect(() => {
@@ -154,28 +277,112 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location }: ArcGISMapV
           </div>
         </div>
         
-        <div className="flex gap-2">
-          <Select value={selectedLayer} onValueChange={setSelectedLayer}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select layer" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="basemap">Satellite Basemap Only</SelectItem>
-              {dataSource === 'nasa' && (
-                <>
-                  <SelectItem value="ndvi">MODIS NDVI (Vegetation)</SelectItem>
-                  <SelectItem value="temperature">Land Surface Temperature</SelectItem>
-                </>
-              )}
-              {dataSource === 'de-africa' && (
-                <>
-                  <SelectItem value="fractional-cover">Fractional Cover</SelectItem>
-                  <SelectItem value="cropland">Cropland Extent</SelectItem>
-                  <SelectItem value="water">Water Observations</SelectItem>
-                </>
-              )}
-            </SelectContent>
-          </Select>
+        <div className="space-y-3">
+          <div className="flex gap-2">
+            <Select value={selectedLayer} onValueChange={setSelectedLayer}>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select layer" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="basemap">Satellite Basemap Only</SelectItem>
+                {dataSource === 'nasa' && (
+                  <>
+                    <SelectItem value="ndvi">MODIS NDVI (Vegetation)</SelectItem>
+                    <SelectItem value="temperature">Land Surface Temperature</SelectItem>
+                  </>
+                )}
+                {dataSource === 'de-africa' && (
+                  <>
+                    <SelectItem value="fractional-cover">Fractional Cover</SelectItem>
+                    <SelectItem value="cropland">Cropland Extent</SelectItem>
+                    <SelectItem value="water">Water Observations</SelectItem>
+                  </>
+                )}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Overlay Controls */}
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Layers className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm font-medium text-foreground">Map Overlays</span>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="boundaries"
+                  checked={overlayLayers.boundaries}
+                  onCheckedChange={(checked) => 
+                    setOverlayLayers(prev => ({ ...prev, boundaries: checked }))
+                  }
+                />
+                <Label htmlFor="boundaries" className="text-xs">Boundaries</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="roads"
+                  checked={overlayLayers.roads}
+                  onCheckedChange={(checked) => 
+                    setOverlayLayers(prev => ({ ...prev, roads: checked }))
+                  }
+                />
+                <Label htmlFor="roads" className="text-xs">Roads</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="water"
+                  checked={overlayLayers.water}
+                  onCheckedChange={(checked) => 
+                    setOverlayLayers(prev => ({ ...prev, water: checked }))
+                  }
+                />
+                <Label htmlFor="water" className="text-xs">Water</Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <Switch
+                  id="elevation"
+                  checked={overlayLayers.elevation}
+                  onCheckedChange={(checked) => 
+                    setOverlayLayers(prev => ({ ...prev, elevation: checked }))
+                  }
+                />
+                <Label htmlFor="elevation" className="text-xs">Elevation</Label>
+              </div>
+            </div>
+          </div>
+
+          {/* Interaction Controls */}
+          <div className="flex items-center justify-between pt-2 border-t border-border">
+            <div className="flex items-center space-x-2">
+              <Switch
+                id="popup"
+                checked={showPopup}
+                onCheckedChange={setShowPopup}
+              />
+              <Label htmlFor="popup" className="text-xs">Click Info</Label>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (view) {
+                  view.goTo({
+                    center: [location.lon, location.lat],
+                    zoom: 12
+                  });
+                  toast({
+                    title: "Map Centered",
+                    description: `Focused on ${location.name}`,
+                  });
+                }
+              }}
+              className="gap-1"
+            >
+              <MapPin className="w-3 h-3" />
+              Center
+            </Button>
+          </div>
         </div>
       </div>
 
