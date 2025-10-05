@@ -1,73 +1,106 @@
-# Welcome to your Lovable project
+# FarmSight: Cultivating the Next Generation with NASA Data
 
-## Project info
+An interactive learning application that teaches sustainable farming decisions using simulated and live satellite data from NASA and Digital Earth Africa.
 
-**URL**: https://lovable.dev/projects/d617d70f-447a-486b-b314-1ae5d11b09c7
+##  Overview
 
-## How can I edit this code?
+FarmSight is a gamified farming simulator that empowers users to make data-driven agricultural decisions. By integrating real satellite data with an engaging gameplay loop, we bridge the knowledge gap for aspiring farmers and provide a risk-free environment to learn sustainable practices.
 
-There are several ways of editing your application.
+**Live Demo:** [https://farm-sight.earth](https://farm-sight.earth)
 
-**Use Lovable**
+##  Features
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/d617d70f-447a-486b-b314-1ae5d11b09c7) and start prompting.
+- **Scenario-Driven Learning**: Realistic seasonal contexts that update monthly
+- **Dual Data Sources**: Switch between NASA global data and Digital Earth Africa high-resolution imagery
+- **Interactive Map Visualization**: Simple and ArcGIS views with data overlays
+- **Real-time Decision Feedback**: Immediate impact on resources, yield, and vigor
+- **Progress Tracking**: Live scoreboard and indicators for yield and plant health
+- **Mobile-First Design**: Optimized for all devices
 
-Changes made via Lovable will be committed automatically to this repo.
+##  Gameplay Loop
 
-**Use your preferred IDE**
+1. **SETUP** - Choose data source, location, and crop
+2. **ASSESS** - Review seasonal conditions and resources
+3. **ACT** - Make farming decisions (irrigation, fertilizer, etc.)
+4. **ANALYZE** - See immediate feedback on your sustainability score
+5. **REPEAT** - Try new strategies in each season
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+## Installation
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+```bash
+# Clone the repository
+git clone https://github.com/ftalam/farmsight-earth-play.git
+cd farmsight-earth-play
 
-Follow these steps:
+# Install dependencies
+npm install
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Start development server
+npm start
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Run development server
+npm start
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Build for production
+npm run build
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
+# Run tests
+npm test
+
+# Eject (one-way operation)
+npm run eject
 ```
 
-**Edit a file directly in GitHub**
+## Data Sources
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### NASA Resources
+- **MODIS**: Vegetation indices for crop health monitoring
+- **SMAP**: Soil moisture data for irrigation planning
+- **GPM**: Precipitation data for water resource management
 
-**Use GitHub Codespaces**
+### Partner Resources
+- **Digital Earth Africa**: High-resolution Sentinel-2 and Landsat imagery
+- **ArcGIS API**: Mapping and spatial visualization
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Target Audience
 
-## What technologies are used for this project?
+- **Primary**: Tech-savvy youth (15-35 years) exploring agri-business
+- **Secondary**: Agricultural advisors and progressive farmers (45-65 years)
+- **Educational**: Students and extension officers
 
-This project is built with:
+##  Technology Stack
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+- **Frontend**: React.js, ArcGIS API for JavaScript
+- **Backend**: Python (Flask/Django)
+- **Data Processing**: NASA APIs, Digital Earth Africa APIs
+- **Deployment**: Modern web hosting platform
 
-## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/d617d70f-447a-486b-b314-1ae5d11b09c7) and click on Share -> Publish.
 
-## Can I connect a custom domain to my Lovable project?
 
-Yes, you can!
+## Impact
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+FarmSight addresses critical challenges in agriculture:
+- **Knowledge Transfer**: Engaging youth in sustainable farming
+- **Climate Resilience**: Teaching data-driven adaptation strategies
+- **Food Security**: Promoting efficient resource management
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+## Development Team
+
+- **Project Lead**: [Giovanni](https://github.com/GIOVESS)
+- **Development**: [Abigail](https://github.com/Kagema-ctrl) & [Faith](https://github.com/ftalam) 
+- **Design & Strategy**: KilimoTek
+
+##  License
+
+This project is developed for the NASA Space Apps Challenge 2025.
+
+## 🔗 Links
+
+- **Live Demo**: [farm-sight.earth](https://farm-sight.earth)
+- **Repository**: [github.com/ftalam/farmsight-earth-play](https://github.com/ftalam/farmsight-earth-play)
+- **NASA Space Apps**: [spaceappschallenge.org](https://www.spaceappschallenge.org)
+
+---
+
+*Built for a sustainable agricultural future*
