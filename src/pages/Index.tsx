@@ -1,17 +1,23 @@
 import { useState } from "react";
 import { MapView } from "@/components/MapView";
+import { ArcGISMapView } from "@/components/ArcGISMapView";
 import { DataPanel } from "@/components/DataPanel";
 import { TimeSlider } from "@/components/TimeSlider";
 import { DecisionPanel } from "@/components/DecisionPanel";
 import { ScenarioInfo } from "@/components/ScenarioInfo";
 import { TeacherGuide } from "@/components/TeacherGuide";
-import { Sprout, BookOpen } from "lucide-react";
+import { DataSourceSwitcher } from "@/components/DataSourceSwitcher";
+import { Sprout, BookOpen, Map as MapIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
   const [currentMonth, setCurrentMonth] = useState(6); // Start in June (dry season)
   const [showGuide, setShowGuide] = useState(false);
+  const [dataSource, setDataSource] = useState<'nasa' | 'de-africa'>('nasa');
+  const [location] = useState({ lat: -1.2921, lon: 36.8219, name: "Kajiado, Kenya" }); // Default location
+  const [mapView, setMapView] = useState<'simple' | 'arcgis'>('simple');
 
   return (
     <div className="min-h-screen bg-background">
@@ -51,12 +57,37 @@ const Index = () => {
         <div className="grid lg:grid-cols-3 gap-4">
           {/* Map and Timeline - Takes 2 columns */}
           <div className="lg:col-span-2 space-y-4">
-            <MapView currentMonth={currentMonth} />
+            <Tabs value={mapView} onValueChange={(v) => setMapView(v as 'simple' | 'arcgis')}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="simple" className="gap-2">
+                  <MapIcon className="w-4 h-4" />
+                  Simple View
+                </TabsTrigger>
+                <TabsTrigger value="arcgis" className="gap-2">
+                  <MapIcon className="w-4 h-4" />
+                  Satellite Map
+                </TabsTrigger>
+              </TabsList>
+              <TabsContent value="simple" className="mt-4">
+                <MapView currentMonth={currentMonth} />
+              </TabsContent>
+              <TabsContent value="arcgis" className="mt-4">
+                <ArcGISMapView 
+                  currentMonth={currentMonth} 
+                  dataSource={dataSource}
+                  location={location}
+                />
+              </TabsContent>
+            </Tabs>
             <TimeSlider currentMonth={currentMonth} onMonthChange={setCurrentMonth} />
           </div>
 
           {/* Data Panels - Takes 1 column */}
           <div className="space-y-4">
+            <DataSourceSwitcher 
+              currentSource={dataSource}
+              onSourceChange={setDataSource}
+            />
             <DataPanel currentMonth={currentMonth} />
             <DecisionPanel currentMonth={currentMonth} />
           </div>

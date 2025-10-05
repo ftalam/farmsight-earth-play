@@ -1,4 +1,7 @@
-// Mock satellite data service simulating NASA MODIS and Digital Earth Africa data
+// Satellite data service with live NASA and Digital Earth Africa integration
+
+import { fetchNASAData } from './nasaDataService';
+import { fetchDEAfricaData } from './deAfricaService';
 
 export interface SatelliteData {
   month: number;
@@ -8,6 +11,7 @@ export interface SatelliteData {
   precipitation: number; // mm
   temperature: number; // celsius
   rainfallPattern: number[]; // weekly pattern for visualization
+  dataSource?: 'nasa' | 'de-africa' | 'simulated';
 }
 
 export interface Decision {
@@ -46,9 +50,82 @@ const ANNUAL_DATA: SatelliteData[] = [
   { month: 12, season: "Short Rains", ndvi: 0.58, soilMoisture: 52, precipitation: 75, temperature: 27, rainfallPattern: [50, 45, 40, 35] }
 ];
 
-export const getSatelliteData = (month: number): SatelliteData => {
-  return ANNUAL_DATA[month - 1];
+export const getSatelliteData = (month: number, dataSource: 'nasa' | 'de-africa' | 'simulated' = 'simulated'): SatelliteData => {
+  const data = ANNUAL_DATA[month - 1];
+  return { ...data, dataSource };
 };
+
+/**
+ * Fetch live satellite data for a specific month and location
+ */
+export async function getLiveSatelliteData(
+  month: number,
+  lat: number,
+  lon: number,
+  dataSource: 'nasa' | 'de-africa'
+): Promise<SatelliteData> {
+  const year = new Date().getFullYear();
+  const date = new Date(year, month - 1, 15); // Mid-month
+  
+  try {
+    if (dataSource === 'nasa') {
+      const startDate = new Date(date);
+      startDate.setDate(1);
+      const endDate = new Date(date);
+      endDate.setMonth(endDate.getMonth() + 1);
+      endDate.setDate(0);
+      
+      const data = await fetchNASAData(lat, lon, startDate, endDate);
+      if (data.length > 0) {
+        const avgData = data[Math.floor(data.length / 2)];
+        return {
+          month,
+          season: getSeasonName(month),
+          ndvi: avgData.ndvi,
+          soilMoisture: avgData.soilMoisture,
+          precipitation: avgData.precipitation,
+          temperature: avgData.temperature,
+          rainfallPattern: data.slice(0, 4).map(d => d.precipitation),
+          dataSource: 'nasa'
+        };
+      }
+    } else if (dataSource === 'de-africa') {
+      const startDate = new Date(date);
+      startDate.setDate(1);
+      const endDate = new Date(date);
+      endDate.setMonth(endDate.getMonth() + 1);
+      endDate.setDate(0);
+      
+      const data = await fetchDEAfricaData(lat, lon, startDate, endDate);
+      if (data.length > 0) {
+        const avgData = data[Math.floor(data.length / 2)];
+        return {
+          month,
+          season: getSeasonName(month),
+          ndvi: avgData.ndvi,
+          soilMoisture: avgData.soilMoisture,
+          precipitation: avgData.precipitation,
+          temperature: 27, // DE Africa doesn't provide temp directly
+          rainfallPattern: data.slice(0, 4).map(d => d.precipitation),
+          dataSource: 'de-africa'
+        };
+      }
+    }
+  } catch (error) {
+    console.error('Error fetching live data, using simulated:', error);
+  }
+  
+  // Fallback to simulated data
+  return getSatelliteData(month, 'simulated');
+}
+
+function getSeasonName(month: number): string {
+  if ([1, 2].includes(month)) return "Short Dry";
+  if ([3, 4, 5].includes(month)) return "Long Rains";
+  if ([6, 7, 8, 9].includes(month)) return "Long Dry";
+  if ([10, 11, 12].includes(month)) return "Short Rains";
+  return "Unknown";
+}
 
 export const getDecisions = (month: number): Decision[] => {
   const data = getSatelliteData(month);
