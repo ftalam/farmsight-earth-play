@@ -11,6 +11,10 @@ import { Sprout, BookOpen, Map as MapIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card } from "@/components/ui/card";
+import { Droplets, FlaskConical, DollarSign } from "lucide-react";
+import { getSatelliteData } from "@/lib/satelliteData";
+import { useEffect } from "react";
 
 const Index = () => {
   const [currentMonth, setCurrentMonth] = useState(6); // Start in June (dry season)
@@ -18,6 +22,28 @@ const Index = () => {
   const [dataSource, setDataSource] = useState<'nasa' | 'de-africa'>('nasa');
   const [location] = useState({ lat: -1.2921, lon: 36.8219, name: "Kajiado, Kenya" }); // Default location
   const [mapView, setMapView] = useState<'simple' | 'arcgis'>('simple');
+
+  // Initial constants per scenario
+  const INITIAL_FUNDS = 1000;
+  const INITIAL_WATER = 100;
+  const INITIAL_FERTILIZER = 50;
+  const INITIAL_SCORE = 0;
+
+  // Resource and score state
+  const [funds, setFunds] = useState(INITIAL_FUNDS);
+  const [water, setWater] = useState(INITIAL_WATER);
+  const [fertilizer, setFertilizer] = useState(INITIAL_FERTILIZER);
+  const [score, setScore] = useState(INITIAL_SCORE);
+
+  const { season } = getSatelliteData(currentMonth);
+
+  // Reset at the start of every new scenario (season change)
+  useEffect(() => {
+    setFunds(INITIAL_FUNDS);
+    setWater(INITIAL_WATER);
+    setFertilizer(INITIAL_FERTILIZER);
+    setScore(INITIAL_SCORE);
+  }, [season]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -33,7 +59,6 @@ const Index = () => {
               <p className="text-sm text-muted-foreground">Learn farming with real satellite data</p>
             </div>
           </div>
-          
           <Sheet open={showGuide} onOpenChange={setShowGuide}>
             <SheetTrigger asChild>
               <Button variant="outline" size="sm" className="gap-2">
@@ -51,7 +76,45 @@ const Index = () => {
       {/* Main Content */}
       <main className="container mx-auto p-4 space-y-4">
         {/* Scenario Info */}
-        <ScenarioInfo currentMonth={currentMonth} />
+        <ScenarioInfo 
+          currentMonth={currentMonth}
+        />
+
+        {/* Score and Resources below Scenario */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <DollarSign className="w-4 h-4 text-primary" />
+              <div className="text-xs text-muted-foreground">Score</div>
+            </div>
+            <div className="text-2xl font-bold text-foreground">{score}</div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center gap-2 mb-1">
+              <DollarSign className="w-4 h-4 text-primary" />
+              <div className="text-xs text-muted-foreground">Funds</div>
+            </div>
+            <div className="text-2xl font-bold text-foreground">${funds}</div>
+          </Card>
+          <Card className="p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <Droplets className="w-4 h-4 text-secondary" />
+                  <div className="text-xs text-muted-foreground">Water</div>
+                </div>
+                <div className="text-xl font-bold text-foreground">{water} L</div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <FlaskConical className="w-4 h-4 text-success" />
+                  <div className="text-xs text-muted-foreground">Fertilizer</div>
+                </div>
+                <div className="text-xl font-bold text-foreground">{fertilizer} kg</div>
+              </div>
+            </div>
+          </Card>
+        </div>
 
         {/* Main Grid Layout */}
         <div className="grid lg:grid-cols-3 gap-4">
@@ -89,7 +152,17 @@ const Index = () => {
               onSourceChange={setDataSource}
             />
             <DataPanel currentMonth={currentMonth} />
-            <DecisionPanel currentMonth={currentMonth} />
+            <DecisionPanel 
+              currentMonth={currentMonth}
+              funds={funds}
+              setFunds={setFunds}
+              water={water}
+              setWater={setWater}
+              fertilizer={fertilizer}
+              setFertilizer={setFertilizer}
+              score={score}
+              setScore={setScore}
+            />
           </div>
         </div>
       </main>

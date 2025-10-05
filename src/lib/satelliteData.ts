@@ -131,8 +131,14 @@ export const getDecisions = (month: number): Decision[] => {
   const data = getSatelliteData(month);
   const decisions: Decision[] = [];
 
-  // Irrigation decision
-  if (data.soilMoisture < 40) {
+  // Helper predicates
+  const isVeryDry = data.soilMoisture < 35;
+  const isDry = data.soilMoisture < 45;
+  const adequateMoisture = data.soilMoisture > 40;
+  const vegetationLow = data.ndvi < 0.5;
+
+  // Irrigation: good when dry; bad when moisture already adequate
+  if (isDry) {
     decisions.push({
       type: "irrigation",
       label: "Apply Irrigation",
@@ -140,60 +146,111 @@ export const getDecisions = (month: number): Decision[] => {
       impact: 25,
       feedback: "Smart choice! Irrigation during dry periods helps maintain crop health and prevents yield loss."
     });
+  } else {
+    decisions.push({
+      type: "irrigation",
+      label: "Apply Irrigation",
+      description: "Irrigating when soil is already moist can harm roots and waste water",
+      impact: -15,
+      feedback: "Over‑irrigation now could waterlog soils, increase disease risk, and wastes resources."
+    });
   }
 
-  // Drought-resistant crops
-  if (data.ndvi < 0.5 && data.soilMoisture < 35) {
+  // Drought-resistant crops: great when very dry and low vegetation; otherwise costly switch
+  if (vegetationLow && isVeryDry) {
     decisions.push({
       type: "drought-crops",
       label: "Plant Drought-Resistant Crops",
       description: "Switch to varieties that need less water",
       impact: 30,
-      feedback: "Excellent adaptation! Drought-resistant crops like sorghum and millet are perfect for dry conditions."
+      feedback: "Excellent adaptation! Drought‑resistant crops like sorghum and millet suit current dry conditions."
+    });
+  } else {
+    decisions.push({
+      type: "drought-crops",
+      label: "Plant Drought-Resistant Crops",
+      description: "Switching crops at the wrong time can reduce yields",
+      impact: -20,
+      feedback: "Timing isn’t ideal for switching to drought‑resistant crops; stick with current plan for now."
     });
   }
 
-  // Fertilizer application
-  if (data.ndvi < 0.6 && data.soilMoisture > 40) {
+  // Fertilizer: best when NDVI is moderate and moisture is adequate; negative otherwise
+  if (data.ndvi < 0.6 && adequateMoisture) {
     decisions.push({
       type: "fertilizer",
       label: "Apply Organic Fertilizer",
       description: "Boost soil nutrients while moisture is adequate",
       impact: 20,
-      feedback: "Good timing! Applying fertilizer when soil moisture is adequate maximizes nutrient uptake."
+      feedback: "Good timing! Moist soils improve nutrient uptake and reduce burn risk."
+    });
+  } else {
+    decisions.push({
+      type: "fertilizer",
+      label: "Apply Organic Fertilizer",
+      description: "Fertilizer on dry or very lush fields is inefficient",
+      impact: -10,
+      feedback: "Poor timing: low moisture reduces uptake (or high canopy makes little difference). Consider waiting."
     });
   }
 
-  // Mulching
-  if (data.soilMoisture < 45) {
+  // Mulching: useful under dry conditions; minor negative when already wet
+  if (isDry) {
     decisions.push({
       type: "mulching",
       label: "Apply Mulch",
       description: "Cover soil to reduce water evaporation",
       impact: 15,
-      feedback: "Wise conservation! Mulching can reduce water loss by up to 70% and improves soil health."
+      feedback: "Wise conservation! Mulching reduces evaporation and improves soil health."
+    });
+  } else {
+    decisions.push({
+      type: "mulching",
+      label: "Apply Mulch",
+      description: "Mulch adds little benefit when moisture is already adequate",
+      impact: -5,
+      feedback: "Not harmful, but less useful right now; save labor and materials for later."
     });
   }
 
-  // Water harvesting
+  // Water harvesting: best when rain is scarce; small negative if already plenty
   if (data.precipitation < 50) {
     decisions.push({
       type: "water-harvest",
       label: "Install Rainwater Harvesting",
       description: "Collect and store available rainfall",
       impact: 20,
-      feedback: "Great planning! Rainwater harvesting provides water security during dry spells."
+      feedback: "Great planning! Rainwater harvesting builds resilience in dry periods."
+    });
+  } else {
+    decisions.push({
+      type: "water-harvest",
+      label: "Install Rainwater Harvesting",
+      description: "Infrastructure now may not be the best priority",
+      impact: -5,
+      feedback: "With sufficient rain, the immediate payoff is limited. Consider lower‑cost actions."
     });
   }
 
-  // Monitoring
-  decisions.push({
-    type: "monitor",
-    label: "Continue Monitoring",
-    description: "Watch satellite data and wait for better conditions",
-    impact: 5,
-    feedback: "Sometimes patience is wise. Keep monitoring the data to time your interventions perfectly."
-  });
+  // Monitoring: good if conditions are stable; negative if stressed and action needed
+  const stressed = data.soilMoisture < 30 || data.ndvi < 0.4;
+  if (stressed) {
+    decisions.push({
+      type: "monitor",
+      label: "Continue Monitoring",
+      description: "Watch satellite data and wait",
+      impact: -10,
+      feedback: "Conditions are stressed; inaction now may worsen outcomes. Consider irrigation or mulching."
+    });
+  } else {
+    decisions.push({
+      type: "monitor",
+      label: "Continue Monitoring",
+      description: "Wait for better conditions",
+      impact: 5,
+      feedback: "Patience is fine; keep monitoring to time interventions."
+    });
+  }
 
   return decisions;
 };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -8,13 +8,24 @@ import { toast } from "@/hooks/use-toast";
 
 interface DecisionPanelProps {
   currentMonth: number;
+  funds: number;
+  setFunds: (f: number) => void;
+  water: number;
+  setWater: (w: number) => void;
+  fertilizer: number;
+  setFertilizer: (f: number) => void;
+  score: number;
+  setScore: (s: number) => void;
 }
 
-export const DecisionPanel = ({ currentMonth }: DecisionPanelProps) => {
-  const [score, setScore] = useState(0);
+export const DecisionPanel = ({ currentMonth, funds, setFunds, water, setWater, fertilizer, setFertilizer, score, setScore }: DecisionPanelProps) => {
   const [decisionsUsed, setDecisionsUsed] = useState<string[]>([]);
   const data = getSatelliteData(currentMonth);
   const decisions = getDecisions(currentMonth);
+
+  useEffect(() => {
+    setDecisionsUsed([]);
+  }, [currentMonth]);
 
   const handleDecision = (decisionType: string, impact: number, feedback: string) => {
     if (decisionsUsed.includes(decisionType)) {
@@ -26,7 +37,39 @@ export const DecisionPanel = ({ currentMonth }: DecisionPanelProps) => {
       return;
     }
 
-    const newScore = score + impact;
+    // Resource logic
+    let newFunds = funds;
+    let newWater = water;
+    let newFertilizer = fertilizer;
+
+    if (decisionType === "irrigation") {
+      newWater = Math.max(0, water - 20);
+      newFunds = Math.max(0, funds - 50);
+    } else if (decisionType === "fertilizer") {
+      newFertilizer = Math.max(0, fertilizer - 10);
+      newFunds = Math.max(0, funds - 30);
+    } else if (decisionType === "drought-crops") {
+      newFunds = Math.max(0, funds - 40);
+    } else if (decisionType === "mulching") {
+      newFunds = Math.max(0, funds - 20);
+    } else if (decisionType === "water-harvest") {
+      newFunds = Math.max(0, funds - 60);
+      newWater = water + 10;
+    } else if (decisionType === "monitor") {
+      // No resource change
+    }
+
+    // Update score based on impact
+    const newScore = Math.max(0, score + impact);
+
+    // Reward for good impact to funds
+    if (impact > 0) {
+      newFunds += Math.floor(impact / 2);
+    }
+
+    setFunds(newFunds);
+    setWater(newWater);
+    setFertilizer(newFertilizer);
     setScore(newScore);
     setDecisionsUsed([...decisionsUsed, decisionType]);
 
@@ -42,9 +85,6 @@ export const DecisionPanel = ({ currentMonth }: DecisionPanelProps) => {
       <div className="space-y-4">
         <div className="flex items-center justify-between">
           <h3 className="font-semibold text-foreground">Farm Decisions</h3>
-          <Badge variant={score > 50 ? "default" : "outline"} className="gap-1">
-            Score: {score}
-          </Badge>
         </div>
 
         {/* Current Conditions Alert */}
@@ -92,9 +132,6 @@ export const DecisionPanel = ({ currentMonth }: DecisionPanelProps) => {
         <div className="pt-3 border-t border-border">
           <div className="text-xs text-muted-foreground space-y-1">
             <p className="font-medium text-foreground">Your Farming Strategy:</p>
-            {score > 70 && <p className="text-success">Excellent! You're making optimal decisions for the conditions.</p>}
-            {score > 40 && score <= 70 && <p>Good progress. Keep monitoring and adjusting your approach.</p>}
-            {score <= 40 && <p>Consider using more adaptive strategies based on the satellite data.</p>}
           </div>
         </div>
       </div>
