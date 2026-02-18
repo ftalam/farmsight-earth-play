@@ -23,7 +23,7 @@ interface LocationStatusProps {
   dataSource: 'nasa' | 'de-africa';
 }
 
-const getLocationData = (location: Location, month: number, dataSource: string): LocationData => {
+const getLocationData = (location: { lat: number; lon: number; name: string }, month: number, dataSource: string): LocationData => {
   // Simulate data based on location and month
   const baseData = {
     ndvi: Math.random() * 0.8 + 0.2,
