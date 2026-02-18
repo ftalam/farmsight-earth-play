@@ -201,6 +201,12 @@ function getSeasonalNDVI(date: Date): number {
  */
 export function getDEAfricaLayers() {
   return {
+    'NDVI Anomaly': {
+      url: `${DE_AFRICA_OGC_API}/wms`,
+      layers: 'ndvi_anomaly',
+      title: 'NDVI Anomaly',
+      description: 'Normalized Difference Vegetation Index from Digital Earth Africa'
+    },
     'Fractional Cover': {
       url: `${DE_AFRICA_OGC_API}/wms`,
       layers: 'fc_ls',

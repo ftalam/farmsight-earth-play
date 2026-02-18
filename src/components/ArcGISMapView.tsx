@@ -3,7 +3,6 @@ import Map from "@arcgis/core/Map";
 import MapView from "@arcgis/core/views/MapView";
 import TileLayer from "@arcgis/core/layers/TileLayer";
 import WMSLayer from "@arcgis/core/layers/WMSLayer";
-import WMTSLayer from "@arcgis/core/layers/WMTSLayer";
 import Graphic from "@arcgis/core/Graphic";
 import GraphicsLayer from "@arcgis/core/layers/GraphicsLayer";
 import FeatureLayer from "@arcgis/core/layers/FeatureLayer";
@@ -14,7 +13,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Layers, Satellite, MapPin, Eye } from "lucide-react";
-import { getDEAfricaLayers } from "@/lib/deAfricaService";
+import { getDEAfricaLayers, fetchDEAfricaNDVI } from "@/lib/deAfricaService";
 import { useToast } from "@/hooks/use-toast";
 import "@arcgis/core/assets/esri/themes/light/main.css";
 
@@ -25,15 +24,11 @@ interface ArcGISMapViewProps {
   onLocationChange?: (location: { lat: number; lon: number; name: string }) => void;
 }
 
-// NASA GIBS WMTS base URL (EPSG:3857 = Web Mercator, compatible with ArcGIS default)
-const GIBS_WMTS_URL = "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/wmts.cgi";
-
-// NDVI display mode: composite only, NDVI only, or blended overlay
-type NDVIMode = 'composite' | 'ndvi' | 'blend';
+// NDVI display mode: composite only or blended overlay
+type NDVIMode = 'composite' | 'blend';
 
 const NDVI_MODE_LABELS: Record<NDVIMode, string> = {
   composite: 'Satellite Composite',
-  ndvi: 'NDVI Only',
   blend: 'NDVI Overlay'
 };
 
@@ -48,7 +43,7 @@ function ndviHealthLabel(value: number): { label: string; color: string } {
 export const ArcGISMapView = ({ currentMonth, dataSource, location, onLocationChange }: ArcGISMapViewProps) => {
   const mapDiv = useRef<HTMLDivElement>(null);
   const viewRef = useRef<MapView | null>(null);
-  const ndviLayerRef = useRef<WMTSLayer | null>(null);
+  const ndviLayerRef = useRef<WMSLayer | null>(null);
   const farmLayerRef = useRef<GraphicsLayer | null>(null);
 
   const [ndviMode, setNdviMode] = useState<NDVIMode>('composite');
@@ -90,16 +85,28 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location, onLocationCh
     mapView.on("click", async (event) => {
       const lon = event.mapPoint.longitude;
       const lat = event.mapPoint.latitude;
+
       if (onLocationChange) {
         onLocationChange({ lat, lon, name: `Selected (${lat.toFixed(4)}, ${lon.toFixed(4)})` });
       }
+
+      let ndviValue: number | null = null;
+      try {
+        // Always use DE Africa NDVI for the point value so it matches the NDVI overlay
+        ndviValue = await fetchDEAfricaNDVI(lat, lon, new Date());
+        setHoveredNDVI(ndviValue);
+      } catch (error) {
+        console.error("Error fetching DE Africa NDVI for clicked point:", error);
+      }
+
       if (!showPopup) return;
       mapView.popup.open({
         location: event.mapPoint,
         content: `
-          <div style="padding:8px;min-width:180px;">
+          <div style="padding:8px;min-width:200px;">
             <p style="margin:0 0 4px;font-size:13px;"><strong>Lat:</strong> ${lat.toFixed(5)}</p>
-            <p style="margin:0;font-size:13px;"><strong>Lon:</strong> ${lon.toFixed(5)}</p>
+            <p style="margin:0 0 4px;font-size:13px;"><strong>Lon:</strong> ${lon.toFixed(5)}</p>
+            <p style="margin:4px 0 0;font-size:13px;"><strong>NDVI (DE Africa):</strong> ${ndviValue !== null ? ndviValue.toFixed(3) : "N/A"}</p>
           </div>`,
         title: "Selected Location"
       });
@@ -159,31 +166,28 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location, onLocationCh
       ndviLayerRef.current = null;
     }
 
+    // In composite mode we keep only the satellite basemap (no NDVI overlay)
     if (ndviMode === 'composite') {
-      // Pure satellite basemap – no overlay needed
+      map.basemap = "satellite" as any;
       return;
     }
 
-    // NASA GIBS MODIS Terra NDVI 8-Day via WMTS
-    const ndviLayer = new WMTSLayer({
-      url: GIBS_WMTS_URL,
-      activeLayer: {
-        id: "MODIS_Terra_NDVI_8Day"
-      } as any,
-      title: "MODIS NDVI",
-      opacity: ndviMode === 'ndvi' ? 1 : ndviOpacity / 100
-    });
+    // Use Digital Earth Africa NDVI WMS layer for overlay
+    const deAfricaLayers = getDEAfricaLayers();
+    const ndviConfig = deAfricaLayers['NDVI Anomaly'];
+
+    const ndviLayer = new WMSLayer({
+      url: ndviConfig.url,
+      sublayers: [{ name: ndviConfig.layers }],
+      title: ndviConfig.title,
+      opacity: ndviOpacity / 100
+    } as any);
 
     ndviLayerRef.current = ndviLayer;
     map.add(ndviLayer);
 
-    // If NDVI-only mode, hide the satellite basemap tiles (set basemap to topo or gray)
-    // We achieve this by swapping basemap
-    if (ndviMode === 'ndvi') {
-      map.basemap = "gray-vector" as any;
-    } else {
-      map.basemap = "satellite" as any;
-    }
+    // Always keep satellite basemap under the NDVI overlay
+    map.basemap = "satellite" as any;
   }, [ndviMode, ndviOpacity, viewReady]);
 
   useEffect(() => {
@@ -279,14 +283,15 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location, onLocationCh
     }
   }, [overlayLayers, viewReady]);
 
-  // ── Simulated NDVI value for the legend (based on month/season) ───────────
+  // ── Simulated NDVI value for the legend (based on month/season, used as fallback) ───────────
   const simulatedNDVI = (() => {
     const base = 0.35;
     const seasonal = Math.sin(((currentMonth - 3) / 12) * 2 * Math.PI) * 0.25;
     return Math.min(0.9, Math.max(0.1, base + seasonal));
   })();
 
-  const health = ndviHealthLabel(hoveredNDVI ?? simulatedNDVI);
+  const displayNDVI = hoveredNDVI ?? simulatedNDVI;
+  const health = ndviHealthLabel(displayNDVI);
 
   return (
     <Card className="overflow-hidden shadow-lg">
@@ -376,8 +381,12 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location, onLocationCh
               <span>1.0 (Dense)</span>
             </div>
             <div className="flex items-center justify-between mt-1">
-              <span className="text-xs text-muted-foreground">Estimated NDVI (Month {currentMonth})</span>
-              <span className={`text-sm font-bold ${health.color}`}>{simulatedNDVI.toFixed(2)}</span>
+              <span className="text-xs text-muted-foreground">
+                {hoveredNDVI !== null
+                  ? "NDVI at selected point (DE Africa)"
+                  : `Estimated NDVI (Month ${currentMonth})`}
+              </span>
+              <span className={`text-sm font-bold ${health.color}`}>{displayNDVI.toFixed(2)}</span>
             </div>
           </div>
         )}
@@ -433,7 +442,7 @@ export const ArcGISMapView = ({ currentMonth, dataSource, location, onLocationCh
       {/* ── Footer ───────────────────────────────────────────────────────── */}
       <div className="bg-muted/50 p-3 text-xs text-muted-foreground">
         <p>
-          NDVI: NASA GIBS MODIS Terra 8-Day · Basemap: Esri Satellite ·{" "}
+          NDVI: Digital Earth Africa (Sentinel-2 derived) · Basemap: Esri Satellite ·{" "}
           {dataSource === 'nasa' ? 'NASA GIBS & POWER API' : 'Digital Earth Africa'} ·{" "}
           {location.lat.toFixed(4)}°, {location.lon.toFixed(4)}°
         </p>
