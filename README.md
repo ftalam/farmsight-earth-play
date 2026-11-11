@@ -6,7 +6,7 @@ An interactive learning application that teaches sustainable farming decisions u
 
 FarmSight is a gamified farming simulator that empowers users to make data-driven agricultural decisions. By integrating real satellite data with an engaging gameplay loop, we bridge the knowledge gap for aspiring farmers and provide a risk-free environment to learn sustainable practices.
 
-**Live Demo:** [https://farm-sight.earth](https://farm-sight.earth)
+**Live Demo:** https://farm-sight-play.netlify.app/
 
 ##  Features
 
