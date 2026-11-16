@@ -97,7 +97,7 @@ This project is developed for the NASA Space Apps Challenge 2025.
 
 ## 🔗 Links
 
-- **Live Demo**: [farm-sight.earth](https://farm-sight.earth)
+- **Live Demo**: [farm-sight.earth](https://farm-sight-play.netlify.app/)
 - **Repository**: [github.com/ftalam/farmsight-earth-play](https://github.com/ftalam/farmsight-earth-play)
 - **NASA Space Apps**: [spaceappschallenge.org](https://www.spaceappschallenge.org)
 
